@@ -1,0 +1,105 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "logger"
+dynamic = ["version"]
+description = 'Custom Logging'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [{ name = "Haz", email = "mail@damianpala.com" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "colorama"
+]
+
+[project.urls]
+Documentation = "https://github.com/DamianPala/logger#readme"
+Issues = "https://github.com/DamianPala/logger/issues"
+Source = "https://github.com/DamianPala/logger"
+
+[tool.hatch.version]
+path = "src/logger/__about__.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+    "coverage[toml]>=6.5",
+    "pytest",
+]
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = [
+    "- coverage combine",
+    "coverage report",
+]
+cov = [
+    "test-cov",
+    "cov-report",
+]
+
+[tool.hatch.envs.hatch-test]
+extra-dependencies = [
+    "pytest-asyncio"
+]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.12"]
+
+[tool.coverage.run]
+source_pkgs = ["logger", "tests"]
+branch = true
+parallel = true
+omit = [
+    "src/logger/__about__.py",
+]
+
+[tool.coverage.paths]
+logger = ["src/logger", "*/logger/src/logger"]
+tests = ["tests", "*/logger/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "no cov",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+norecursedirs = [
+    ".",
+    ".svn",
+    "_build",
+    "tmp*",
+    "lib/third",
+    "lib",
+    "*.egg",
+    "bin",
+    "distutils",
+    "build",
+    "docs",
+    "demo"
+]
+addopts = "-p no:xdist --tb=long --capture=fd -rxX  --maxfail=10"
+python_files = ["*.py"]
+log_cli = true
+log_cli_level = "DEBUG"
+log_format = "[%(asctime)s.%(msecs)03d] - %(name)s:%(lineno)d [%(levelname)s]: %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+testpaths = [
+    "tests"
+]
