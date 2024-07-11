@@ -1,9 +1,9 @@
 import pytest
 from _pytest.logging import LogCaptureFixture
-from src.logger import logger
+from logger import logger
 
 
 @pytest.fixture
-def caplog(caplog: LogCaptureFixture):
+def caplog(caplog: LogCaptureFixture) -> LogCaptureFixture:
     logger.caplog_integrate(caplog.handler)
     yield caplog
