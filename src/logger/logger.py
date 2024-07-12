@@ -3,7 +3,7 @@
 import re
 import sys
 import logging
-from typing import IO, Optional
+from typing import IO, Optional, List
 from pathlib import Path
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from colorama import Fore, Style, just_fix_windows_console
@@ -13,7 +13,6 @@ just_fix_windows_console()
 DEFAULT_LOG_LEVEL = INFO
 DEFAULT_LOG_FORMAT = '[%(asctime)s] - %(name)s:%(lineno)d [%(levelname)s]: %(message)s'
 _PACKAGE_NAME = (Path(__file__) / '..').resolve().name
-_SPECIAL_MARKING_ATTRIBUTE_NAME = '_special_marking_attribute'
 
 LOG_COLORS = {
     DEBUG: Fore.MAGENTA,
@@ -53,6 +52,8 @@ class ColorCleanFormatter(logging.Formatter):
 
 
 class Logger(logging.Logger):
+    loggers: List['Logger'] = []
+
     def __init__(self,
                  name: str,
                  level: int = DEFAULT_LOG_LEVEL,
@@ -67,8 +68,7 @@ class Logger(logging.Logger):
         del self.handlers[:]
         self.addHandler(ch)
         self.propagate = propagate
-        self.manager.loggerClass = Logger
-        setattr(self, _SPECIAL_MARKING_ATTRIBUTE_NAME, None)
+        self.loggers.append(self)
 
     def setLevel(self, level: int) -> None:
         super().setLevel(level)
@@ -84,13 +84,8 @@ class Logger(logging.Logger):
 
     def caplog_integrate(self, caplog_handler) -> None:
         self.addHandler(caplog_handler)
-        for _logger in logger.manager.loggerDict.values():
-            try:
-                getattr(_logger, _SPECIAL_MARKING_ATTRIBUTE_NAME)
-            except AttributeError:
-                pass
-            else:
-                _logger.addHandler(caplog_handler)
+        for _logger in self.loggers:
+            _logger.addHandler(caplog_handler)
 
     def debug(self, msg, *args, **kwargs) -> None:
         self._log_message(logging.DEBUG, msg, *args, **kwargs)
@@ -135,7 +130,7 @@ def get_logger(name: str) -> Logger:
     """
     Get a logger with the given ``name``.
     """
-    _logger = logger.manager.getLogger(name)
+    _logger = Logger(name)
     _logger.setLevel(logger.level)
     for handler in _logger.handlers:
         handler.setLevel(logger.level)
@@ -149,15 +144,10 @@ def set_level(level: int) -> None:
     logger.setLevel(level)
     for handler in logger.handlers:
         handler.setLevel(level)
-    for _logger in logger.manager.loggerDict.values():
-        try:
-            getattr(_logger, _SPECIAL_MARKING_ATTRIBUTE_NAME)
-        except AttributeError:
-            pass
-        else:
-            _logger.setLevel(level)
-            for handler in _logger.handlers:
-                handler.setLevel(level)
+    for _logger in Logger.loggers:
+        _logger.setLevel(level)
+        for handler in _logger.handlers:
+            handler.setLevel(level)
 
 
 def _isatty(stream: IO) -> bool:

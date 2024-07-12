@@ -8,7 +8,7 @@ import subprocess
 from inspect import currentframe
 from pathlib import Path
 
-import src.logger as logger
+import logger as logger
 
 
 @pytest.fixture
@@ -21,30 +21,30 @@ def log() -> logger.Logger:
 class TestMsgFormat:
     def test_simple_msg(self, log, caplog):
         log.info('This is a message')
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[INFO\]: This is a message', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message', caplog.text)
 
     def test_msg_with_args(self, log, caplog):
         log.info('This is a message', 'with', 'args', 1, 2.0)
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[INFO\]: This is a message with args 1 2.0', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message with args 1 2.0', caplog.text)
 
     def test_msg_with_kwargs(self, log, caplog):
         log.info('This is a message', 'with', 'kwargs', kw1=1, kw2=2.0)
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[INFO\]: This is a message with kwargs kw1=1 kw2=2.0', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message with kwargs kw1=1 kw2=2.0', caplog.text)
 
 
 class TestLevels:
     def test_all_levels(self, log, caplog):
         log.setLevel(logger.NOTSET)
         log.debug('Debug message')
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[DEBUG\]: Debug message', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[DEBUG]: Debug message', caplog.text)
         log.info('Info message')
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[INFO\]: Info message', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: Info message', caplog.text)
         log.warning('Warning message')
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[WARNING\]: Warning message', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[WARNING]: Warning message', caplog.text)
         log.error('Error message')
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[ERROR\]: Error message', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[ERROR]: Error message', caplog.text)
         log.critical('Critical message')
-        assert re.search(rf'\[.*\] - mylogger:{currentframe().f_lineno - 1} \[CRITICAL\]: Critical message', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[CRITICAL]: Critical message', caplog.text)
 
     def test_level_debug(self, log, caplog):
         log.setLevel(logger.DEBUG)
@@ -168,4 +168,4 @@ def test_valid_package_name_when_run_as_a_package():
                             cwd=Path(__file__).parent,
                             capture_output=True,
                             text=True).stdout
-    assert re.search(r'\[.*\] - mypackage\.mymodule:\d+ \[INFO\]: Info message', output)
+    assert re.search(r'\[.*] - mypackage\.mymodule:\d+ \[INFO]: Info message', output)
