@@ -3,18 +3,18 @@
 import re
 import sys
 import pytest
+import logging
 import tempfile
 import subprocess
 from inspect import currentframe
 from pathlib import Path
 
-import logger as logger
+import logger
 
 
 @pytest.fixture
 def log() -> logger.Logger:
     _log = logger.get_logger('mylogger')
-    _log.setLevel(logger.DEFAULT_LOG_LEVEL)
     return _log
 
 
@@ -130,6 +130,7 @@ class TestLevels:
                                 cwd=Path(__file__).parent,
                                 capture_output=True,
                                 text=True).stdout
+        print(output)
         assert 'Debug message' not in output
         assert 'Info message' in output
         assert 'Warning message' in output
@@ -140,11 +141,23 @@ class TestLevels:
                                 cwd=Path(__file__).parent,
                                 capture_output=True,
                                 text=True).stdout
+        print(output)
         assert 'Debug message' in output
         assert 'Info message' in output
         assert 'Warning message' in output
         assert 'Error message' in output
         assert 'Critical message' in output
+
+    def test_set_level_from_root_when_lower(self, caplog):
+        root_level = logging.root.level
+        logging.root.setLevel(logging.WARNING)
+        log = logger.Logger('local')
+        assert log.level == logger.DEFAULT_LOG_LEVEL
+
+        logging.root.setLevel(logging.DEBUG)
+        log = logger.Logger('local')
+        assert log.level == logging.root.level
+        logging.root.setLevel(root_level)
 
 
 def test_file_logging(log):

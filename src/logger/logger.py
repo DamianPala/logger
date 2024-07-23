@@ -5,7 +5,7 @@ import sys
 import logging
 from typing import IO, Optional, List
 from pathlib import Path
-from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
+from logging import NOTSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
 from colorama import Fore, Style, just_fix_windows_console
 
 just_fix_windows_console()
@@ -56,9 +56,12 @@ class Logger(logging.Logger):
 
     def __init__(self,
                  name: str,
-                 level: int = DEFAULT_LOG_LEVEL,
+                 level: int = NOTSET,
                  fmt: Optional[str] = None,
                  propagate: bool = False) -> None:
+        root_level = logging.root.getEffectiveLevel()
+        if level == NOTSET:
+            level = root_level if root_level < DEFAULT_LOG_LEVEL else DEFAULT_LOG_LEVEL
         level = self._load_level_from_sys_argv(level)
         super().__init__(name, level)
         fmt = fmt or DEFAULT_LOG_FORMAT
