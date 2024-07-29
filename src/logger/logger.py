@@ -72,11 +72,13 @@ class Logger(logging.Logger):
         self.addHandler(ch)
         self.propagate = propagate
         self.loggers.append(self)
+        self.caplog_handler: Optional[logging.Handler] = None
 
     def setLevel(self, level: int) -> None:
         super().setLevel(level)
         for handler in self.handlers:
-            handler.setLevel(level)
+            if handler is not logger.caplog_handler:
+                handler.setLevel(level)
 
     def enable_file_logging(self, filename: str, level: Optional[int] = None, fmt: Optional[str] = None) -> None:
         fh = logging.FileHandler(filename)
@@ -86,6 +88,7 @@ class Logger(logging.Logger):
         self.addHandler(fh)
 
     def caplog_integrate(self, caplog_handler) -> None:
+        self.caplog_handler = caplog_handler
         self.addHandler(caplog_handler)
         for _logger in self.loggers:
             _logger.addHandler(caplog_handler)
@@ -101,6 +104,9 @@ class Logger(logging.Logger):
 
     def error(self, msg, *args, **kwargs) -> None:
         self._log_message(logging.ERROR, msg, *args, **kwargs)
+
+    def exception(self, msg, *args, exc_info=True, **kwargs) -> None:
+        self._log_message(logging.ERROR, msg, *args, exc_info=exc_info, **kwargs)
 
     def critical(self, msg, *args, **kwargs) -> None:
         self._log_message(logging.CRITICAL, msg, *args, **kwargs)
@@ -151,6 +157,21 @@ def set_level(level: int) -> None:
         _logger.setLevel(level)
         for handler in _logger.handlers:
             handler.setLevel(level)
+
+
+def enable_file_logging(filename: str, level: Optional[int] = None, fmt: Optional[str] = None) -> None:
+    fh = logging.FileHandler(filename)
+    formatter = ColorCleanFormatter(fmt or DEFAULT_LOG_FORMAT)
+    fh.setFormatter(formatter)
+    fh.setLevel(level or logging.root.level)
+    logging.root.addHandler(fh)
+
+    for _logger in Logger.loggers:
+        fh = logging.FileHandler(filename)
+        formatter = ColorCleanFormatter(fmt or DEFAULT_LOG_FORMAT)
+        fh.setFormatter(formatter)
+        fh.setLevel(level or _logger.level)
+        _logger.addHandler(fh)
 
 
 def _isatty(stream: IO) -> bool:

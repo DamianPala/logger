@@ -6,8 +6,8 @@ log = get_logger(__name__)
 
 
 def test_log():
-    log.debug('Debug message')
-    log.info('Info message')
-    log.warning('Warning message')
-    log.error('Error message')
-    log.critical('Critical message')
+    log.debug('My module debug message')
+    log.info('My module info message')
+    log.warning('My module warning message')
+    log.error('My module error message')
+    log.critical('My module critical message')

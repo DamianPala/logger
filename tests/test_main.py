@@ -10,6 +10,8 @@ from inspect import currentframe
 from pathlib import Path
 
 import logger
+from .otherpackage import othermodule
+from .mypackage import mymodule
 
 
 @pytest.fixture
@@ -98,6 +100,23 @@ class TestLevels:
         log.critical('Critical message')
         assert 'Critical message' in caplog.text
 
+    def test_level_exception(self, log, caplog):
+        log.setLevel(logger.ERROR)
+        log.debug('Debug message')
+        assert 'Debug message' not in caplog.text
+        log.info('Info message')
+        assert 'Info message' not in caplog.text
+        log.warning('Warning message')
+        assert 'Warning message' not in caplog.text
+        try:
+            raise ValueError('This is an exception')
+        except ValueError as e:
+            log.exception(e)
+        assert 'Traceback (most recent call last)' in caplog.text
+        assert 'ValueError: This is an exception' in caplog.text
+        log.critical('Critical message')
+        assert 'Critical message' in caplog.text
+
     def test_level_critical(self, log, caplog):
         log.setLevel(logger.CRITICAL)
         log.debug('Debug message')
@@ -111,7 +130,29 @@ class TestLevels:
         log.critical('Critical message')
         assert 'Critical message' in caplog.text
 
+    def test_set_local_level(self, log, caplog):
+        log.setLevel(logger.ERROR)
+        log.debug('Local debug message')
+        log.info('Local info message')
+        log.warning('Local warning message')
+        log.error('Local error message')
+        log.critical('Local critical message')
+        othermodule.test_log()
+
+        assert 'Local module debug message' not in caplog.text
+        assert 'Local module info message' not in caplog.text
+        assert 'Local module warning message' not in caplog.text
+        assert 'Local error message' in caplog.text
+        assert 'Local critical message' in caplog.text
+
+        assert 'Other module debug message' in caplog.text
+        assert 'Other module info message' in caplog.text
+        assert 'Other module warning message' in caplog.text
+        assert 'Other module error message' in caplog.text
+        assert 'Other module critical message' in caplog.text
+
     def test_set_global_level(self, log, caplog):
+        logger_level = logger.logger.level
         log.setLevel(logger.DEBUG)
         logger.set_level(logger.ERROR)
         log.debug('Debug message')
@@ -125,28 +166,30 @@ class TestLevels:
         log.critical('Critical message')
         assert 'Critical message' in caplog.text
 
+        logger.set_level(logger_level)
+
     def test_set_level_from_sys_argv(self):
         output = subprocess.run([sys.executable, '-m', 'mypackage'],
                                 cwd=Path(__file__).parent,
                                 capture_output=True,
                                 text=True).stdout
         print(output)
-        assert 'Debug message' not in output
-        assert 'Info message' in output
-        assert 'Warning message' in output
-        assert 'Error message' in output
-        assert 'Critical message' in output
+        assert 'My module debug message' not in output
+        assert 'My module info message' in output
+        assert 'My module warning message' in output
+        assert 'My module error message' in output
+        assert 'My module critical message' in output
 
         output = subprocess.run([sys.executable, '-m', 'mypackage', '-v'],
                                 cwd=Path(__file__).parent,
                                 capture_output=True,
                                 text=True).stdout
         print(output)
-        assert 'Debug message' in output
-        assert 'Info message' in output
-        assert 'Warning message' in output
-        assert 'Error message' in output
-        assert 'Critical message' in output
+        assert 'My module debug message' in output
+        assert 'My module info message' in output
+        assert 'My module warning message' in output
+        assert 'My module error message' in output
+        assert 'My module critical message' in output
 
     def test_set_level_from_root_when_lower(self, caplog):
         root_level = logging.root.level
@@ -160,7 +203,7 @@ class TestLevels:
         logging.root.setLevel(root_level)
 
 
-def test_file_logging(log):
+def test_file_logging_local(log):
     log.setLevel(logger.INFO)
     log_file = tempfile.NamedTemporaryFile(delete=False).name
     log.enable_file_logging(log_file)
@@ -169,11 +212,47 @@ def test_file_logging(log):
     log.warning('Warning message')
     log.error('Error message')
     log.critical('Critical message')
+    mymodule.test_log()
+    othermodule.test_log()
     log_file_text = Path(log_file).read_text()
+
+    assert '[DEBUG]: Dnfo message' not in log_file_text
     assert '[INFO]: Info message' in log_file_text
     assert '[WARNING]: Warning message' in log_file_text
     assert '[ERROR]: Error message' in log_file_text
     assert '[CRITICAL]: Critical message' in log_file_text
+
+
+def test_file_logging_global(log):
+    log.setLevel(logger.ERROR)
+    log_file = tempfile.NamedTemporaryFile(delete=False).name
+    logger.enable_file_logging(log_file)
+    log.debug('Local debug message')
+    log.info('Local info message')
+    log.warning('Local warning message')
+    log.error('Local error message')
+    log.critical('Local critical message')
+    mymodule.test_log()
+    othermodule.test_log()
+    log_file_text = Path(log_file).read_text()
+
+    assert 'Local module debug message' not in log_file_text
+    assert 'Local module info message' not in log_file_text
+    assert 'Local module warning message' not in log_file_text
+    assert 'Local error message' in log_file_text
+    assert 'Local critical message' in log_file_text
+
+    assert 'My module debug message' not in log_file_text
+    assert 'My module info message' in log_file_text
+    assert 'My module warning message' in log_file_text
+    assert 'My module error message' in log_file_text
+    assert 'My module critical message' in log_file_text
+
+    assert 'Other module debug message' in log_file_text
+    assert 'Other module info message' in log_file_text
+    assert 'Other module warning message' in log_file_text
+    assert 'Other module error message' in log_file_text
+    assert 'Other module critical message' in log_file_text
 
 
 def test_valid_package_name_when_run_as_a_package():
@@ -181,4 +260,4 @@ def test_valid_package_name_when_run_as_a_package():
                             cwd=Path(__file__).parent,
                             capture_output=True,
                             text=True).stdout
-    assert re.search(r'\[.*] - mypackage\.mymodule:\d+ \[INFO]: Info message', output)
+    assert re.search(r'\[.*] - mypackage\.mymodule:\d+ \[INFO]: My module info message', output)
