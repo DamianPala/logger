@@ -43,7 +43,7 @@ class ColorCleanFormatter(logging.Formatter):
         super().__init__(fmt=fmt)
 
     def format(self, record: logging.LogRecord) -> str:
-        record.msg = self._clear_ansi(record.msg)
+        record.msg = self._clear_ansi(str(record.msg))
         record.levelname = self._clear_ansi(record.levelname)
         return super().format(record)
 
