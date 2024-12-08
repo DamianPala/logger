@@ -23,15 +23,20 @@ def log() -> logger.Logger:
 class TestMsgFormat:
     def test_simple_msg(self, log, caplog):
         log.info('This is a message')
-        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message', caplog.text) # noqa
 
     def test_msg_with_args(self, log, caplog):
         log.info('This is a message', 'with', 'args', 1, 2.0)
-        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message with args 1 2.0', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message with args 1 2.0', caplog.text) # noqa
+
+    def test_msg_variables_only_with_non_string_first(self, log, caplog):
+        msg = [1, 'This is a message', 'with', 'args', 1, 2.0]
+        log.info(*msg)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: 1 This is a message with args 1 2.0', caplog.text) # noqa
 
     def test_msg_with_kwargs(self, log, caplog):
         log.info('This is a message', 'with', 'kwargs', kw1=1, kw2=2.0)
-        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message with kwargs kw1=1 kw2=2.0', caplog.text)
+        assert re.search(rf'\[.*] - mylogger:{currentframe().f_lineno - 1} \[INFO]: This is a message with kwargs kw1=1 kw2=2.0', caplog.text) # noqa
 
 
 class TestLevels:
@@ -216,7 +221,7 @@ def test_file_logging_local(log):
     othermodule.test_log()
     log_file_text = Path(log_file).read_text()
 
-    assert '[DEBUG]: Dnfo message' not in log_file_text
+    assert '[DEBUG]: Debug message' not in log_file_text
     assert '[INFO]: Info message' in log_file_text
     assert '[WARNING]: Warning message' in log_file_text
     assert '[ERROR]: Error message' in log_file_text
@@ -253,6 +258,26 @@ def test_file_logging_global(log):
     assert 'Other module warning message' in log_file_text
     assert 'Other module error message' in log_file_text
     assert 'Other module critical message' in log_file_text
+
+
+def test_file_logging_unicode(log):
+    log.setLevel(logger.INFO)
+    log_file = tempfile.NamedTemporaryFile(delete=False).name
+    log.enable_file_logging(log_file)
+    log.debug('Debug special 😀')
+    log.info('Info special 😀')
+    log.warning('Warning special 😀')
+    log.error('Error special 😀')
+    log.critical('Critical special 😀')
+    mymodule.test_log()
+    othermodule.test_log()
+    log_file_text = Path(log_file).read_text()
+
+    assert '[DEBUG]: Debug special 😀' not in log_file_text
+    assert '[INFO]: Info special 😀' in log_file_text
+    assert '[WARNING]: Warning special 😀' in log_file_text
+    assert '[ERROR]: Error special 😀' in log_file_text
+    assert '[CRITICAL]: Critical special 😀' in log_file_text
 
 
 def test_valid_package_name_when_run_as_a_package():

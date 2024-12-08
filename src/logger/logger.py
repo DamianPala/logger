@@ -81,7 +81,7 @@ class Logger(logging.Logger):
                 handler.setLevel(level)
 
     def enable_file_logging(self, filename: str, level: Optional[int] = None, fmt: Optional[str] = None) -> None:
-        fh = logging.FileHandler(filename)
+        fh = logging.FileHandler(filename, encoding='utf-8')
         fh.setLevel(level or self.level)
         formatter = ColorCleanFormatter(fmt or DEFAULT_LOG_FORMAT)
         fh.setFormatter(formatter)
@@ -114,6 +114,7 @@ class Logger(logging.Logger):
     def _log_message(self, level, msg, *args, **kwargs) -> None:
         filtered_kwargs = {k: v for k, v in kwargs.items()
                            if k not in {'exc_info', 'stack_info', 'stacklevel', 'extra'}}
+        msg = str(msg)
         if args:
             message = msg % args if '%' in msg else ' '.join((msg, *map(str, args)))
         else:
@@ -160,14 +161,14 @@ def set_level(level: int) -> None:
 
 
 def enable_file_logging(filename: str, level: Optional[int] = None, fmt: Optional[str] = None) -> None:
-    fh = logging.FileHandler(filename)
+    fh = logging.FileHandler(filename, encoding='utf-8')
     formatter = ColorCleanFormatter(fmt or DEFAULT_LOG_FORMAT)
     fh.setFormatter(formatter)
     fh.setLevel(level or logging.root.level)
     logging.root.addHandler(fh)
 
     for _logger in Logger.loggers:
-        fh = logging.FileHandler(filename)
+        fh = logging.FileHandler(filename, encoding='utf-8')
         formatter = ColorCleanFormatter(fmt or DEFAULT_LOG_FORMAT)
         fh.setFormatter(formatter)
         fh.setLevel(level or _logger.level)
